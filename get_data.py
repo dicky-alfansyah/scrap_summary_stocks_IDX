@@ -5,14 +5,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from datetime import datetime, timedelta
 from selenium import webdriver
+import logging
 import time
 import os
+
+# Setup logging
+logging.basicConfig(filename='download_errors.log', level=logging.ERROR, 
+                    format='%(message)s', datefmt='%Y-%m-%d')
 
 def configure_firefox():
     stock_download_dir = os.path.join(os.getcwd(), "get_data")
     os.makedirs(stock_download_dir, exist_ok=True)
 
-    geckodriver_path = "driver/geckodriver.exe"
+    geckodriver_path = "/home/difansyah/Documents/scrap_summary_stocks_IDX/driver/geckodriver"
     options = Options()
     options.add_argument("--incognito")
     options.add_argument("--headless")
@@ -58,10 +63,13 @@ def select_date(driver, year, month, day):
     selected_date.click()
 
 def download_data_for_dates(driver, start_date, end_date):
-    current_date = start_date
-    while current_date <= end_date:
+    dates_list = [start_date + timedelta(days=x) for x in range((end_date - start_date).days + 1)]
+    
+    for current_date in dates_list:
         year, month, day = current_date.year, current_date.month, current_date.day
         try:
+            print(f"Processing {year}-{month:02d}-{day:02d}")
+            
             select_date(driver, year, month, day)
             time.sleep(5)
             download_button = WebDriverWait(driver, 10).until(
@@ -75,8 +83,7 @@ def download_data_for_dates(driver, start_date, end_date):
             time.sleep(4)
         except Exception as e:
             print(f"No data available for {year}-{month:02d}-{day:02d}. Skipping...")
-
-        current_date += timedelta(days=1)
+            logging.error(f"{year}-{month:02d}-{day:02d}")
 
 # Buka browser dan konfigurasi Firefox
 driver = configure_firefox()
@@ -96,3 +103,4 @@ download_data_for_dates(driver, start_date, end_date)
 
 # Tutup browser
 driver.quit()
+
